@@ -1,6 +1,7 @@
 import os
 import pkgutil
 import importlib
+import sys
 from app.command import CommandHandler,Command
 from app.command.menu_command import MenuCommand
 from dotenv import load_dotenv
@@ -30,16 +31,24 @@ class App:
                 plugin_module = importlib.import_module(f'{plugins_package}.{plugin_name}')
                 command_class = getattr(plugin_module, f'{plugin_name.capitalize()}Command')
                 self.command_handler.register_command(plugin_name, command_class())
-
-        # Register MenuCommand
-        self.command_handler.register_command("menu", MenuCommand(self.command_handler))
         
     def start(self):
         print("Type 'menu' to see available commands. Type 'exit' to exit.")
+        menu_command = MenuCommand(self.command_handler)
+        menu_command.execute()
         while True:
             command_input = input(">>> ").strip()
-            if command_input == "exit":
-                break
-            if command_input:
-                command_name, *args = command_input.split()
-                self.command_handler.execute_command(command_name, *args)
+            match command_input:
+                case "exit":
+                    sys.exit(1)
+                case "menu":
+                    menu_command.execute()
+                case _ if command_input:
+                    command_name, *args = command_input.split()
+                    if command_name in self.command_handler.commands:
+                        self.command_handler.execute_command(command_name, *args)
+                    else:
+                        print(f"No such command: {command_name}")
+                        sys.exit(1)
+
+
