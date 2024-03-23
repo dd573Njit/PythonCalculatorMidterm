@@ -2,8 +2,7 @@ import os
 import pkgutil
 import importlib
 import sys
-from app.command import CommandHandler,Command
-from app.command.menu_command import MenuCommand
+from app.command import CommandHandler, Command
 from dotenv import load_dotenv
 
 class App:
@@ -12,43 +11,62 @@ class App:
         self.settings = self.load_environment_variables()
         self.settings.setdefault('ENVIRONMENT', 'PRODUCTION')
         self.command_handler = CommandHandler()
-        self.load_commands()
-    
+
     def load_environment_variables(self):
         settings = {key: value for key, value in os.environ.items()}
+        print("Environment variables loaded.")
         return settings
 
     def get_environment_variable(self, env_var: str = 'ENVIRONMENT'):
         return self.settings.get(env_var, None)
             
-    def load_commands(self):
-        enabled_plugins = os.getenv('ENABLED_PLUGINS', '').split(',')
+    def show_menu(self):
+        print("Available commands:")
+        # List all registered commands
+        for command_name in self.command_handler.commands.keys():
+            print(f"- {command_name}")
 
-        # Dynamically load plugins
+    def load_plugins(self):
         plugins_package = 'app.plugins'
-        for _, plugin_name, _ in pkgutil.iter_modules(['app/plugins']):
-            if plugin_name in enabled_plugins:
-                plugin_module = importlib.import_module(f'{plugins_package}.{plugin_name}')
-                command_class = getattr(plugin_module, f'{plugin_name.capitalize()}Command')
-                self.command_handler.register_command(plugin_name, command_class())
-        
+        plugins_path = plugins_package.replace('.', '/')
+        if not os.path.exists(plugins_path):
+            print(f"Plugins directory '{plugins_path}' not found.")
+            return
+        for _, plugin_name, is_pkg in pkgutil.iter_modules([plugins_path]):
+            if is_pkg:
+                try:
+                    plugin_module = importlib.import_module(f'{plugins_package}.{plugin_name}')
+                    self.register_plugin_commands(plugin_module, plugin_name)
+                except ImportError as e:
+                    print(f"Error importing plugin {plugin_name}: {e}")
+
+    def register_plugin_commands(self, plugin_module, plugin_name):
+        for item_name in dir(plugin_module):
+            item = getattr(plugin_module, item_name)
+            if isinstance(item, type) and issubclass(item, Command) and item is not Command:
+                # Command names are now explicitly set to the plugin's folder name
+                self.command_handler.register_command(plugin_name, item())
+                print(f"Command '{plugin_name}' from plugin '{plugin_name}' registered.")
+
     def start(self):
-        print("Type 'menu' to see available commands. Type 'exit' to exit.")
-        menu_command = MenuCommand(self.command_handler)
-        menu_command.execute()
+        self.load_plugins()
+        self.show_menu()
+        print("Application started. Type 'exit' to exit.")
         while True:
-            command_input = input(">>> ").strip()
-            match command_input:
-                case "exit":
-                    sys.exit(1)
-                case "menu":
-                    menu_command.execute()
-                case _ if command_input:
-                    command_name, *args = command_input.split()
-                    if command_name in self.command_handler.commands:
-                        self.command_handler.execute_command(command_name, *args)
-                    else:
-                        print(f"No such command: {command_name}")
-                        sys.exit(1)
+            input_line = input(">>> ").strip()
+            if input_line == "":
+                continue  # Skip empty input
+            parts = input_line.split()  # Split input into parts by whitespace
+            command_name = parts[0]
+            args = parts[1:]  # All the remaining parts are considered arguments
 
+        # Check if the command is 'menu' to show available commands
+            if command_name == "menu":
+                self.show_menu()
+                continue
 
+            try:
+                self.command_handler.execute_command(command_name, *args)
+            except KeyError:
+                print(f"Unknown command: {command_name}")
+                sys.exit(1)  # Use a non-zero exit code to indicate failure or incorrect command.
