@@ -3,6 +3,7 @@ import pkgutil
 import importlib
 import sys
 from app.command import CommandHandler, Command
+from app.calculation_history import CalculationHistory
 from dotenv import load_dotenv
 
 class App:
@@ -10,6 +11,7 @@ class App:
         load_dotenv()
         self.settings = self.load_environment_variables()
         self.settings.setdefault('ENVIRONMENT', 'PRODUCTION')
+        self.calculation_history = CalculationHistory()
         self.command_handler = CommandHandler()
 
     def load_environment_variables(self):
@@ -28,17 +30,38 @@ class App:
 
     def load_plugins(self):
         plugins_package = 'app.plugins'
-        plugins_path = plugins_package.replace('.', '/')
-        if not os.path.exists(plugins_path):
-            print(f"Plugins directory '{plugins_path}' not found.")
+        calculation_path = os.path.join(plugins_package.replace('.', '/'), 'calculations')
+        history_path = os.path.join(plugins_package.replace('.', '/'), 'history')
+        other_plugins_path = plugins_package.replace('.', '/')
+    
+        # Load calculation commands
+        self.load_plugin_commands(calculation_path, f'{plugins_package}.calculations')
+    
+        # Load history management commands, passing the CalculationHistory instance
+        self.load_plugin_commands(history_path, f'{plugins_package}.history', self.calculation_history)
+        
+        self.load_plugin_commands(other_plugins_path,f'{plugins_package}')
+
+                    
+    def load_plugin_commands(self, path, package, history_instance=None):
+        if not os.path.exists(path):
+            print(f"Directory '{path}' not found.")
             return
-        for _, plugin_name, is_pkg in pkgutil.iter_modules([plugins_path]):
-            if is_pkg:
-                try:
-                    plugin_module = importlib.import_module(f'{plugins_package}.{plugin_name}')
-                    self.register_plugin_commands(plugin_module, plugin_name)
-                except ImportError as e:
-                    print(f"Error importing plugin {plugin_name}: {e}")
+        for _, plugin_name, _ in pkgutil.iter_modules([path]):
+            try:
+                plugin_module = importlib.import_module(f'{package}.{plugin_name}')
+                if history_instance:
+                    # Pass the CalculationHistory instance to history commands
+                    command_instance = getattr(plugin_module, f'{plugin_name.capitalize()}Command')(history_instance)
+                else:
+                    # Calculation commands do not need the CalculationHistory instance
+                    command_instance = getattr(plugin_module, f'{plugin_name.capitalize()}Command')()
+                self.command_handler.register_command(plugin_name, command_instance)
+                print(f"Command '{plugin_name}' from plugin '{plugin_name}' registered.")
+            except ImportError as e:
+                print(f"Error importing plugin {plugin_name}: {e}")
+
+        
 
     def register_plugin_commands(self, plugin_module, plugin_name):
         for item_name in dir(plugin_module):
