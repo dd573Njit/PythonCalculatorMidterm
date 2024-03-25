@@ -1,5 +1,5 @@
 import pytest
-from app.plugins.divide import DivideCommand
+from app.plugins.calculations.divide import DivideCommand
 
 def test_app_divide_command(capfd, monkeypatch, app_instance):
     """Test division."""

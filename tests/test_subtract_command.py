@@ -1,5 +1,5 @@
 import pytest
-from app.plugins.subtract import SubtractCommand
+from app.plugins.calculations.subtract import SubtractCommand
 
 def test_app_subtract_command(capfd, monkeypatch, app_instance):
     """Test subtraction."""

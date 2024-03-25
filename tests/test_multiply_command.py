@@ -1,5 +1,5 @@
 import pytest
-from app.plugins.multiply import MultiplyCommand
+from app.plugins.calculations.multiply import MultiplyCommand
 
 def test_app_multiply_command(capfd, monkeypatch, app_instance):
     """Test multiplication."""
