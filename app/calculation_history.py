@@ -45,13 +45,20 @@ class CalculationHistory:
 
     def clear_history(self):
         self.history_df = pd.DataFrame(columns=['Calculations'])
+        self.save_history()
         print("History cleared.")
 
     def delete_history(self, index):
+        if not os.path.exists(self.history_file) or self.history_df.empty:
+            print("No history to delete.")
+            return False  # Indicates no action was taken
         try:
-            self.history_df.drop(index, inplace=True)
-            self.history_df.reset_index(drop=True, inplace=True)
+            if index < 0 or index >= len(self.history_df):
+                raise KeyError(f"Invalid index: {index}")
+            self.history_df = self.history_df.drop(index).reset_index(drop=True)
             self.save_history()
             print("Record deleted.")
-        except KeyError:
-            print("Invalid index for deletion.")
+            return True  # Indicates successful deletion
+        except KeyError as e:
+            print(f"Invalid index for deletion: {index + 1}.")
+            return False
