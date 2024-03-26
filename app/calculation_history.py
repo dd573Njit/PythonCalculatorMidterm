@@ -35,8 +35,13 @@ class CalculationHistory:
         print("History saved.")
 
     def load_history(self):
-        self.history_df = self.load_or_initialize_history()
-        print("History loaded.")
+        if os.path.exists(self.history_file):
+            self.history_df = pd.read_csv(self.history_file)
+            print("Calculation history loaded.")
+            return True
+        else:
+            print("There is no CSV file.")
+            return False
 
     def clear_history(self):
         self.history_df = pd.DataFrame(columns=['Calculations'])
