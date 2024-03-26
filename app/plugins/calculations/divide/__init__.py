@@ -1,11 +1,17 @@
-from app.command import Command
-class DivideCommand(Command):
+# app/plugins/calculation/divide.py
+from app.command.base_command import BaseCommand
+
+class DivideCommand(BaseCommand):
+
     def execute(self, *args):
         try:
-            numbers = list(map(float, args))  # Convert args to float and make a list
-            if len(numbers) != 2:
+            if len(args) != 2:
                 return "Error: There can only be 2 arguments."
-            return numbers[0] / numbers[1]
+            dividend, divisor = map(float, args)
+            result = dividend / divisor
+            operation = " / ".join(args) + f" = {result}"
+            self.history_instance.add_record(operation, result)
+            return result
         except ValueError:
             return "Error: All arguments must be numbers."
         except ZeroDivisionError:
