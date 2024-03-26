@@ -32,7 +32,6 @@ class CalculationHistory:
     def save_history(self):
         os.makedirs(os.path.dirname(self.history_file), exist_ok=True)
         self.history_df.to_csv(self.history_file, index=False)
-        print("History saved.")
 
     def load_history(self):
         if os.path.exists(self.history_file):
@@ -46,7 +45,6 @@ class CalculationHistory:
     def clear_history(self):
         self.history_df = pd.DataFrame(columns=['Calculations'])
         self.save_history()
-        print("History cleared.")
 
     def delete_history(self, index):
         if not os.path.exists(self.history_file) or self.history_df.empty:
@@ -58,7 +56,7 @@ class CalculationHistory:
             self.history_df = self.history_df.drop(index).reset_index(drop=True)
             self.save_history()
             print("Record deleted.")
-            return True  # Indicates successful deletion
+            return True
         except KeyError as e:
             print(f"Invalid index for deletion: {index + 1}.")
             return False
