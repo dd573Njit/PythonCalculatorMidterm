@@ -1,35 +1,37 @@
-from unittest.mock import patch
 import pytest
+from unittest.mock import patch
 from app.plugins.history.clear import ClearCommand
+from app.calculation_history import CalculationHistory
+from app.logging_utility import LoggingUtility
 
 @pytest.fixture
-def mocked_calculation_history():
-    """Fixture to mock CalculationHistory and its methods."""
-    with patch('app.calculation_history.CalculationHistory') as mocked_calc_history:
-        mocked_instance = mocked_calc_history.return_value
-        # Mock any methods as needed, e.g., clear_history
-        yield mocked_instance
+def mock_history_instance(mocker):
+    # Mock the CalculationHistory's constructor and clear_history method
+    mocker.patch.object(CalculationHistory, '__init__', return_value=None)
+    history_instance = CalculationHistory()
+    history_instance.clear_history = mocker.MagicMock()
+    return history_instance
 
-# Test executing the clear command without arguments
-def test_clear_command_no_args(mocked_calculation_history, capsys):
-    clear_command = ClearCommand()
-    clear_command.history_instance = mocked_calculation_history
+@pytest.fixture
+def clear_command(mock_history_instance):
+    # Patch the CalculationHistory within ClearCommand to use the mocked instance
+    with patch('app.command.base_command.CalculationHistory', return_value=mock_history_instance):
+        return ClearCommand()
+
+def test_clear_command_success(clear_command, mocker):
+    # Mock LoggingUtility.info to verify successful history clearance logs
+    mock_info = mocker.patch.object(LoggingUtility, 'info')
+
     clear_command.execute()
-    
-    # Verify clear_history was called
-    mocked_calculation_history.clear_history.assert_called_once()
-    
-    captured = capsys.readouterr()
-    assert "Calculation history cleared." in captured.out
 
-# Test executing the clear command with arguments
-def test_clear_command_with_args(mocked_calculation_history, capsys):
-    clear_command = ClearCommand()
-    clear_command.history_instance = mocked_calculation_history
-    clear_command.execute("unexpected_argument")
-    
-    # Verify clear_history was not called
-    mocked_calculation_history.clear_history.assert_not_called()
-    
-    captured = capsys.readouterr()
-    assert "The clear command does not accept any arguments." in captured.out
+    mock_info.assert_called_once_with("Calculation history cleared.")
+    clear_command.history_instance.clear_history.assert_called_once()
+
+def test_clear_command_with_arguments(clear_command, mocker):
+    # Mock LoggingUtility.warning to check for the warning when arguments are passed
+    mock_warning = mocker.patch.object(LoggingUtility, 'warning')
+
+    clear_command.execute('unexpected_argument')
+
+    mock_warning.assert_called_once_with("The clear command does not accept any arguments.")
+    clear_command.history_instance.clear_history.assert_not_called()

@@ -1,57 +1,65 @@
-from unittest.mock import patch, MagicMock
 import pytest
+from unittest.mock import patch, MagicMock
+from pandas import DataFrame
 from app.plugins.history.load import LoadCommand
+from app.calculation_history import CalculationHistory
+from app.logging_utility import LoggingUtility
 
-# Fixture for a mocked instance of CalculationHistory
 @pytest.fixture
-def mocked_calculation_history():
-    with patch('app.calculation_history.CalculationHistory') as mocked_calc_history:
-        mocked_instance = mocked_calc_history.return_value
-        mocked_instance.history_df = MagicMock()
-        yield mocked_instance
+def mock_history_instance(mocker):
+    # Mock the CalculationHistory's methods
+    mocker.patch.object(CalculationHistory, '__init__', return_value=None)
+    history_instance = CalculationHistory()
+    history_instance.load_history = mocker.MagicMock()
+    history_instance.history_df = MagicMock()
+    return history_instance
 
-# Test: CSV exists and contains data
-def test_load_command_with_data(mocked_calculation_history, capsys):
-    # Setup
-    mocked_calculation_history.load_history.return_value = True
-    mocked_calculation_history.history_df.empty = False
-    mocked_calculation_history.history_df.to_string.return_value = "Mocked Calculations"
+@pytest.fixture
+def load_command(mock_history_instance):
+    # Use the mocked CalculationHistory instance in LoadCommand
+    with patch('app.command.base_command.CalculationHistory', return_value=mock_history_instance):
+        return LoadCommand()
+
+def test_load_command_with_data(load_command, mocker):
+    # Mock LoggingUtility.info
+    mock_info = mocker.patch.object(LoggingUtility, 'info')
+    
+    # Setup mock history DataFrame
+    data = {'Calculations': ['1 + 1 = 2', '2 * 3 = 6']}
+    df = DataFrame(data)
+    load_command.history_instance.history_df = df
+    load_command.history_instance.load_history.return_value = True
     
     # Execute
-    load_command = LoadCommand()
-    load_command.history_instance = mocked_calculation_history
     load_command.execute()
     
-    # Assert
-    captured = capsys.readouterr()
-    assert "Calculations:" in captured.out
-    assert "Mocked Calculations" in captured.out
+    # Verify LoggingUtility.info was called with the DataFrame's string representation
+    mock_info.assert_called_once()
+    assert df.to_string(index=False) in mock_info.call_args[0][0]
 
-# Test: CSV exists but is empty
-def test_load_command_empty(mocked_calculation_history, capsys):
-    # Setup
-    mocked_calculation_history.load_history.return_value = True
-    mocked_calculation_history.history_df.empty = True
+def test_load_command_empty(mock_history_instance, load_command, mocker):
+    # Mock LoggingUtility.warning
+    mock_warning = mocker.patch.object(LoggingUtility, 'warning')
+    
+    # Setup an empty DataFrame
+    load_command.history_instance.history_df = DataFrame()
+    load_command.history_instance.load_history.return_value = True
     
     # Execute
-    load_command = LoadCommand()
-    load_command.history_instance = mocked_calculation_history
     load_command.execute()
     
-    # Assert
-    captured = capsys.readouterr()
-    assert "No calculations in history." in captured.out
+    # Verify LoggingUtility.warning was called with "No calculations in history."
+    mock_warning.assert_called_once_with("No calculations in history.")
 
-# Test: CSV does not exist
-def test_load_command_no_csv(mocked_calculation_history, capsys):
-    # Setup
-    mocked_calculation_history.load_history.return_value = False
+def test_load_command_no_csv(load_command, mocker):
+    # Mock LoggingUtility.warning
+    mock_warning = mocker.patch.object(LoggingUtility, 'warning')
+    
+    # Setup load_history to return False (CSV not found)
+    load_command.history_instance.load_history.return_value = False
     
     # Execute
-    load_command = LoadCommand()
-    load_command.history_instance = mocked_calculation_history
     load_command.execute()
     
-    # Assert
-    captured = capsys.readouterr()
-    assert "Unable to load history. No CSV file present." in captured.out
+    # Verify LoggingUtility.warning was called with "Unable to load history. No CSV file present."
+    mock_warning.assert_called_once_with("Unable to load history. No CSV file present.")

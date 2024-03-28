@@ -1,56 +1,57 @@
-from unittest.mock import patch
-import pytest
+import os
 import pandas as pd
+import pytest
+from unittest.mock import patch
 from app.calculation_history import CalculationHistory
 
 @pytest.fixture
-def mock_calculation_history(tmp_path):
-    """Fixture to mock CalculationHistory with a temporary CSV file path."""
-    with patch.object(CalculationHistory, 'initialize') as mock_init:
-        instance = CalculationHistory()
-        instance.history_file = tmp_path / "calculation_history.csv"
-        instance.history_df = pd.DataFrame(columns=['Calculations'])
-        yield instance
+def mock_env(tmp_path, monkeypatch):
+    # Create a temporary CSV file path
+    temp_csv = tmp_path / "temp_calculation_history.csv"
+    # Use monkeypatch to set environment variable to use the temp CSV path
+    monkeypatch.setenv('HISTORY_FILE_PATH', str(temp_csv))
+    return temp_csv
 
-def test_singleton_property():
-    """Test that CalculationHistory is a singleton class."""
-    first_instance = CalculationHistory()
-    second_instance = CalculationHistory()
-    assert first_instance is second_instance
+@pytest.fixture
+def calculation_history_instance(mock_env):
+    # Resetting _instance to ensure a fresh instance for each test
+    CalculationHistory._instance = None
+    return CalculationHistory()
 
-def test_add_record_and_save_history(mock_calculation_history):
-    """Test adding a record and saving to history."""
-    mock_calculation_history.add_record("2 + 2", "4")
-    assert not mock_calculation_history.history_df.empty
-    assert mock_calculation_history.history_df.iloc[0]['Calculations'] == "2 + 2"
+def test_singleton_pattern(calculation_history_instance):
+    instance_one = CalculationHistory()
+    instance_two = CalculationHistory()
+    assert instance_one is instance_two
 
-    # Simulate saving to CSV and reloading to ensure persistence
-    mock_calculation_history.save_history()
-    mock_calculation_history.load_history()
-    assert "2 + 2" in mock_calculation_history.history_df['Calculations'].values
+def test_load_history_exists(calculation_history_instance, mock_env):
+    # Pre-populate the CSV file with test data
+    pd.DataFrame({"Calculations": ["2 + 2 = 4"]}).to_csv(mock_env, index=False)
+    assert calculation_history_instance.load_history() == True
+    assert not calculation_history_instance.history_df.empty
 
-def test_clear_history(mock_calculation_history):
-    """Test clearing the history."""
-    mock_calculation_history.add_record("2 + 2", "4")
-    mock_calculation_history.clear_history()
-    assert mock_calculation_history.history_df.empty
+def test_load_history_not_exists(calculation_history_instance, mock_env):
+    # Ensure the file does not exist by removing it if it does
+    if mock_env.exists():
+        os.remove(mock_env)
+    assert calculation_history_instance.load_history() == False
+    assert calculation_history_instance.history_df.empty
 
-def test_delete_history_with_valid_index(mock_calculation_history):
-    """Test deleting a history record by valid index."""
-    mock_calculation_history.add_record("3 + 3", "6")
-    mock_calculation_history.delete_history(0)
-    assert mock_calculation_history.history_df.empty
+def test_add_record(calculation_history_instance):
+    calculation_history_instance.add_record("3 + 3", 6)
+    assert "3 + 3" in calculation_history_instance.history_df['Calculations'].values
 
-def test_delete_history_with_invalid_index(mock_calculation_history, capsys):
-    """Test attempting to delete a history record with an invalid index."""
-    mock_calculation_history.add_record("3 + 3", "6")
-    mock_calculation_history.delete_history(999)  # Invalid index
-    captured = capsys.readouterr()
-    assert "Invalid index for deletion" in captured.out
+def test_clear_history(calculation_history_instance):
+    # Add a record to ensure the history is not initially empty
+    calculation_history_instance.add_record("3 + 3", 6)
+    calculation_history_instance.clear_history()
+    assert calculation_history_instance.history_df.empty
 
-def test_load_history_when_no_csv_exists(mock_calculation_history, capsys):
-    """Test loading history when no CSV file exists."""
-    result = mock_calculation_history.load_history()
-    captured = capsys.readouterr()
-    assert "There is no CSV file" in captured.out
-    assert result is False
+def test_delete_history_valid_index(calculation_history_instance):
+    calculation_history_instance.add_record("4 + 4", 8)
+    calculation_history_instance.delete_history(0)
+    assert calculation_history_instance.history_df.empty
+
+def test_delete_history_invalid_index(calculation_history_instance):
+    calculation_history_instance.add_record("4 + 4", 8)
+    with pytest.raises(KeyError):
+        calculation_history_instance.delete_history(10)  # Assuming an invalid index

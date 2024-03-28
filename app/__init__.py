@@ -4,9 +4,11 @@ import importlib
 import sys
 from app.command import CommandHandler, Command
 from dotenv import load_dotenv
+from app.logging_utility import LoggingUtility
 
 class App:
     def __init__(self):
+        LoggingUtility.configure_logging()
         load_dotenv()
         self.settings = self.load_environment_variables()
         self.settings.setdefault('ENVIRONMENT', 'PRODUCTION')
@@ -14,7 +16,7 @@ class App:
 
     def load_environment_variables(self):
         settings = {key: value for key, value in os.environ.items()}
-        print("Environment variables loaded.")
+        LoggingUtility.info("Environment variables loaded.")
         return settings
 
     def get_environment_variable(self, env_var: str = 'ENVIRONMENT'):
@@ -40,16 +42,16 @@ class App:
                     
     def load_plugin_commands(self, path, package):
         if not os.path.exists(path):
-            print(f"Directory '{path}' not found.")
+            LoggingUtility.warning(f"Directory '{path}' not found.")
             return
         for _, plugin_name, _ in pkgutil.iter_modules([path]):
             try:
                 plugin_module = importlib.import_module(f'{package}.{plugin_name}')
                 command_instance = getattr(plugin_module, f'{plugin_name.capitalize()}Command')()
                 self.command_handler.register_command(plugin_name, command_instance)
-                print(f"Command '{plugin_name}' from plugin '{plugin_name}' registered.")
+                LoggingUtility.info(f"Command '{plugin_name}' from plugin '{plugin_name}' registered.")
             except ImportError as e:
-                print(f"Error importing plugin {plugin_name}: {e}")
+                LoggingUtility.error(f"Error importing plugin {plugin_name}: {e}")
 
         
 
@@ -58,12 +60,12 @@ class App:
             item = getattr(plugin_module, item_name)
             if isinstance(item, type) and issubclass(item, Command) and item is not Command:
                 self.command_handler.register_command(plugin_name, item())
-                print(f"Command '{plugin_name}' from plugin '{plugin_name}' registered.")
+                LoggingUtility.info(f"Command '{plugin_name}' from plugin '{plugin_name}' registered.")
 
     def start(self):
         self.load_plugins()
         self.show_menu()
-        print("Application started. Type 'exit' to exit.")
+        LoggingUtility.info("Application started. Type 'exit' to exit.")
         while True:
             input_line = input(">>> ").strip()
             if input_line == "":
@@ -79,5 +81,5 @@ class App:
             try:
                 self.command_handler.execute_command(command_name, *args)
             except KeyError:
-                print(f"Unknown command: {command_name}")
+                LoggingUtility.error(f"Unknown command: {command_name}")
                 sys.exit(1)

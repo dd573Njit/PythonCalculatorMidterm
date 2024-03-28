@@ -36,11 +36,8 @@ class CalculationHistory:
     def load_history(self):
         if os.path.exists(self.history_file):
             self.history_df = pd.read_csv(self.history_file)
-            print("Calculation history loaded.")
             return True
-        else:
-            print("There is no CSV file.")
-            return False
+        return False
 
     def clear_history(self):
         self.history_df = pd.DataFrame(columns=['Calculations'])
@@ -48,15 +45,9 @@ class CalculationHistory:
 
     def delete_history(self, index):
         if not os.path.exists(self.history_file) or self.history_df.empty:
-            print("No history to delete.")
             return False  # Indicates no action was taken
-        try:
-            if index < 0 or index >= len(self.history_df):
-                raise KeyError(f"Invalid index: {index}")
-            self.history_df = self.history_df.drop(index).reset_index(drop=True)
-            self.save_history()
-            print("Record deleted.")
-            return True
-        except KeyError as e:
-            print(f"Invalid index for deletion: {index + 1}.")
-            return False
+        if index < 0 or index >= len(self.history_df):
+            raise KeyError(f"Invalid index: {index}")
+        self.history_df = self.history_df.drop(index).reset_index(drop=True)
+        self.save_history()
+        return True

@@ -1,16 +1,19 @@
 from app.command.base_command import BaseCommand
+from app.logging_utility import LoggingUtility
 
 class DeleteCommand(BaseCommand):
     def execute(self, *args):
         if len(args) == 0:
-            print("You have to declare an index after the delete command.")
+            LoggingUtility.warning("You have to declare an index after the delete command.")
         elif len(args) > 1:
-            print("You can declare only one index after the delete command.")
+            LoggingUtility.warning("You can declare only one index after the delete command.")
         else:
             try:
                 index = int(args[0])
                 # Proceed with deletion if the provided index is valid
                 if not self.history_instance.delete_history(index - 1):  # Adjusting index to be 0-based
-                    print("Unable to delete record. Please check the index or CSV file.")
+                    LoggingUtility.warning("Unable to delete record. Please check the index or CSV file.")
+                else:
+                    LoggingUtility.info("Record deleted.")
             except ValueError:
-                print("Error: Index must be an integer.")
+                LoggingUtility.error("Error: Index must be an integer.")

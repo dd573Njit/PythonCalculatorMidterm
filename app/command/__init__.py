@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from app.logging_utility import LoggingUtility
 
 class Command(ABC):
     @abstractmethod
@@ -18,8 +19,8 @@ class CommandHandler:
             command = self.commands[command_name]
             result = command.execute(*args)  # Unpack arguments to pass to execute
             if result is not None:
-                print(result)  # Or handle the command result as needed
+                LoggingUtility.info(result)  # Or handle the command result as needed
         except KeyError:
-            print(f"No such command: {command_name}")
+            LoggingUtility.error(f"No such command: {command_name}")
         except Exception as e:
-            print(f"Error executing command '{command_name}': {e}")
+            LoggingUtility.error(f"Error executing command '{command_name}': {e}")
