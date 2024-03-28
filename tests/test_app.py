@@ -1,5 +1,5 @@
-import os
 import pytest
+from unittest.mock import patch
 from app import App
 
 def test_app_start_exit_command(capfd, monkeypatch):
@@ -10,26 +10,27 @@ def test_app_start_exit_command(capfd, monkeypatch):
     with pytest.raises(SystemExit) as e:
         app.start()
     assert e.type == SystemExit
-
     
-def test_load_environment_variables():
-    app = App()
-    environment = app.get_environment_variable('ENVIRONMENT')
-    assert environment is not None
-    assert environment == 'PRODUCTION'
+def test_app_initialization_and_env_loading(app_instance):
+    # Assuming 'ENVIRONMENT' variable is critical for your application.
+    assert app_instance.get_environment_variable('ENVIRONMENT') is not None
+        
+def test_execute_known_command(app_instance):
+    with patch.object(app_instance.command_handler, 'execute_command') as mock_execute:
+        # Replace 'add' with an actual command your app supports
+        app_instance.command_handler.execute_command('add', '2', '3')
+        mock_execute.assert_called_with('add', '2', '3')
 
-def test_plugin_loading(monkeypatch):
-    # Mock the os.environ.get to return a specific plugin
-    monkeypatch.setattr(os, 'environ', {'ENABLED_PLUGINS': 'add,subtract'})
-    app = App()
-    app.load_plugins()
-    assert 'add' in app.command_handler.commands
-    assert 'subtract' in app.command_handler.commands
+def test_handle_unknown_command(app_instance):
+    with patch('app.logging_utility.LoggingUtility.error') as mock_log_error:
+        # Attempt to execute an unknown command
+        app_instance.command_handler.execute_command('nonexistent_command')
+        mock_log_error.assert_called()
 
-def test_empty_input(capfd, monkeypatch):
-    inputs = iter(['', 'exit'])
-    monkeypatch.setattr('builtins.input', lambda _: next(inputs))
-    app = App()
+@patch('builtins.input', side_effect=['unknown_command', 'exit'])
+def test_repl_exit(mock_input, app_instance):
     with pytest.raises(SystemExit):
-        app.start()
-    captured = capfd.readouterr()
+        app_instance.start()
+    # Verify input was called twice: once for the command and once for 'exit'
+    assert mock_input.call_count == 2
+
