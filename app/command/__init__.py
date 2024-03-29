@@ -14,6 +14,8 @@ class CommandHandler:
         self.commands[command_name] = command
 
     def execute_command(self, command_name, *args):
+        #"Easier to Ask for Forgiveness than Permission" (EAFP)
+        #As there are multiple ways an error can occur, so try catch is used
         try:
             # Execute the command with any arguments provided
             command = self.commands[command_name]

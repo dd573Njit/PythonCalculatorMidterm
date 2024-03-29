@@ -5,6 +5,8 @@ from app.logging_utility import LoggingUtility
 class SubtractCommand(BaseCommand):
 
     def execute(self, *args):
+        #"Easier to Ask for Forgiveness than Permission" (EAFP)
+        #Very few chances to get the value error
         try:
             numbers = [float(arg) for arg in args]
             result = numbers[0] - sum(numbers[1:])

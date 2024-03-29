@@ -45,6 +45,8 @@ class App:
             LoggingUtility.warning(f"Directory '{path}' not found.")
             return
         for _, plugin_name, _ in pkgutil.iter_modules([path]):
+            #"Easier to Ask for Forgiveness than Permission" (EAFP)
+            #Very few chance of getting the import error
             try:
                 plugin_module = importlib.import_module(f'{package}.{plugin_name}')
                 command_instance = getattr(plugin_module, f'{plugin_name.capitalize()}Command')()
@@ -77,7 +79,9 @@ class App:
             if command_name == "menu":
                 self.show_menu()
                 continue
-
+            
+            #"Easier to Ask for Forgiveness than Permission" (EAFP)
+            #Very few chance of getting an unknown command error
             try:
                 self.command_handler.execute_command(command_name, *args)
             except KeyError:

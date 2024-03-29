@@ -6,6 +6,8 @@ import functools
 class MultiplyCommand(BaseCommand):
 
     def execute(self, *args):
+        #"Easier to Ask for Forgiveness than Permission" (EAFP)
+        #Very few chances to get the value error
         try:
             numbers = [float(arg) for arg in args]
             result = functools.reduce(lambda x, y: x * y, numbers)

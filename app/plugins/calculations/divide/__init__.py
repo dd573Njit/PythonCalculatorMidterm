@@ -5,6 +5,8 @@ from app.logging_utility import LoggingUtility
 class DivideCommand(BaseCommand):
 
     def execute(self, *args):
+        #"Easier to Ask for Forgiveness than Permission" (EAFP)
+        #Instead of checking with multiple if else statement to check multiple error, it is easier to use try catch block
         try:
             if len(args) != 2:
                 LoggingUtility.warning("Error: There can only be 2 arguments.")
