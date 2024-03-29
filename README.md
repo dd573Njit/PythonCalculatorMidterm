@@ -31,3 +31,5 @@ In the 'CalculationHistory' class, the environment variable 'HISTORY_FILE_PATH' 
   - ClearCommand class [here](https://github.com/dd573Njit/PythonCalculatorMidterm/blob/main/app/plugins/history/clear/__init__.py)
   - DeleteCommand class [here](https://github.com/dd573Njit/PythonCalculatorMidterm/blob/main/app/plugins/history/delete/__init__.py)
   - LoadCommand class [here](https://github.com/dd573Njit/PythonCalculatorMidterm/blob/main/app/plugins/history/load/__init__.py)
+
+  ## Project Document and video [here](https://github.com/dd573Njit/PythonCalculatorMidterm/tree/main/DocAndVideo)
