@@ -1,5 +1,5 @@
-import pytest
 from unittest.mock import MagicMock, patch
+import pytest
 from app.command import CommandHandler, Command
 from app.logging_utility import LoggingUtility
 

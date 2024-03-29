@@ -1,5 +1,5 @@
-import pytest
 from unittest.mock import patch, MagicMock
+import pytest
 from pandas import DataFrame
 from app.plugins.history.load import LoadCommand
 from app.calculation_history import CalculationHistory

@@ -1,5 +1,5 @@
-import pytest
 from unittest.mock import patch
+import pytest
 from app import App
 
 def test_app_start_exit_command(capfd, monkeypatch):
@@ -33,4 +33,3 @@ def test_repl_exit(mock_input, app_instance):
         app_instance.start()
     # Verify input was called twice: once for the command and once for 'exit'
     assert mock_input.call_count == 2
-

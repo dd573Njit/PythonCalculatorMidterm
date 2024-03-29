@@ -56,10 +56,12 @@ class CalculationHistory:
 
     #delete the record from history at a specific index
     def delete_history(self, index):
+        #"Look Before You Leap" (LBYL)
+        # we have higher chance that csv file may not be present or user might try to delete the record with an invalid index
         if not os.path.exists(self.history_file) or self.history_df.empty:
             return False  # Indicates no action was taken
         if index < 0 or index >= len(self.history_df):
-            raise KeyError(f"Invalid index: {index}")
+            return False
         self.history_df = self.history_df.drop(index).reset_index(drop=True)
         self.save_history()
         return True

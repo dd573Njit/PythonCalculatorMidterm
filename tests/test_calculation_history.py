@@ -1,7 +1,7 @@
+# pylint: disable=protected-access
 import os
 import pandas as pd
 import pytest
-from unittest.mock import patch
 from app.calculation_history import CalculationHistory
 
 @pytest.fixture
@@ -26,14 +26,14 @@ def test_singleton_pattern(calculation_history_instance):
 def test_load_history_exists(calculation_history_instance, mock_env):
     # Pre-populate the CSV file with test data
     pd.DataFrame({"Calculations": ["2 + 2 = 4"]}).to_csv(mock_env, index=False)
-    assert calculation_history_instance.load_history() == True
+    assert calculation_history_instance.load_history() is True
     assert not calculation_history_instance.history_df.empty
 
 def test_load_history_not_exists(calculation_history_instance, mock_env):
     # Ensure the file does not exist by removing it if it does
     if mock_env.exists():
         os.remove(mock_env)
-    assert calculation_history_instance.load_history() == False
+    assert calculation_history_instance.load_history() is False
     assert calculation_history_instance.history_df.empty
 
 def test_add_record(calculation_history_instance):
@@ -53,5 +53,6 @@ def test_delete_history_valid_index(calculation_history_instance):
 
 def test_delete_history_invalid_index(calculation_history_instance):
     calculation_history_instance.add_record("4 + 4", 8)
-    with pytest.raises(KeyError):
-        calculation_history_instance.delete_history(10)  # Assuming an invalid index
+    delete_status = calculation_history_instance.delete_history(10)  # Assuming an invalid index
+    assert delete_status is False
+    assert len(calculation_history_instance.history_df) == 1

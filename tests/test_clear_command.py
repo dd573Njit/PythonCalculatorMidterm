@@ -1,5 +1,5 @@
-import pytest
 from unittest.mock import patch
+import pytest
 from app.plugins.history.clear import ClearCommand
 from app.calculation_history import CalculationHistory
 from app.logging_utility import LoggingUtility

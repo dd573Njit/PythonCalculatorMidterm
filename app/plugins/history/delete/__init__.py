@@ -19,5 +19,6 @@ class DeleteCommand(BaseCommand):
                     LoggingUtility.warning("Unable to delete record. Please check the index or CSV file.")
                 else:
                     LoggingUtility.info("Record deleted.")
+                    print(index)
             except ValueError:
                 LoggingUtility.error("Error: Index must be an integer.")

@@ -38,8 +38,7 @@ class App:
         self.load_plugin_commands(history_path, f'{plugins_package}.history')
         
         self.load_plugin_commands(other_plugins_path,f'{plugins_package}')
-
-                    
+               
     def load_plugin_commands(self, path, package):
         if not os.path.exists(path):
             LoggingUtility.warning(f"Directory '{path}' not found.")
@@ -64,6 +63,7 @@ class App:
                 self.command_handler.register_command(plugin_name, item())
                 LoggingUtility.info(f"Command '{plugin_name}' from plugin '{plugin_name}' registered.")
 
+     #initiates a Read-Eval-Print Loop (REPL), continuously accepting user input. 
     def start(self):
         self.load_plugins()
         self.show_menu()
