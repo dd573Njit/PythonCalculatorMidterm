@@ -19,9 +19,7 @@ class CommandHandler:
         try:
             # Execute the command with any arguments provided
             command = self.commands[command_name]
-            print(command_name)
             result = command.execute(*args)  # Unpack arguments to pass to execute
-            print(result)
             if result is not None:
                 LoggingUtility.info(result)  # Or handle the command result as needed
         except KeyError:
